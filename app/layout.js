@@ -1,13 +1,21 @@
-const title = 'PayRank — the price to be seen';
-const description = 'Pay to rank. Outbid whoever is above you. Every dollar is public.';
+const title = 'PayRank — Buy Your Way to #1';
+const description = 'PayRank is a public leaderboard where websites, products and creators compete for attention. Bid higher to claim a higher rank.';
 
 export const metadata = {
   title,
   description,
+  metadataBase: new URL('https://www.payrank.lol'),
+  alternates: {
+    canonical: '/',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     title,
     description,
-    url: 'https://payrank.lol',
+    url: 'https://www.payrank.lol/',
     siteName: 'PayRank',
     type: 'website',
   },
