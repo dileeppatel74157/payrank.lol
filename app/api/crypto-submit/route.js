@@ -1,11 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { verifyUsdtTransfer } from '@/lib/tron';
 
-// Crypto bids are NOT auto-confirmed (no on-chain verification wired up for this MVP).
-// This just logs a "pending" bid with the tx hash the bidder claims to have sent.
-// You confirm it manually in the Supabase table editor after checking the transaction
-// on a TRC20 block explorer (e.g. tronscan.org) — then flip status to 'confirmed' and
-// the total_bid update happens via the same logic as the webhook (see README).
 export async function POST(req) {
   try {
     const { amountUSD, url, displayName, category, txHash } = await req.json();
@@ -19,42 +15,117 @@ export async function POST(req) {
 
     const db = supabaseAdmin();
 
-    const { data: existing } = await db
-      .from('listings')
+    // Prevent double-spending by checking if this transaction hash was already confirmed
+    const { data: existingBid } = await db
+      .from('bids')
       .select('id')
+      .eq('payment_method', 'crypto')
+      .eq('payment_reference', txHash)
+      .eq('status', 'confirmed')
+      .maybeSingle();
+
+    if (existingBid) {
+      return NextResponse.json(
+        { error: 'This transaction hash has already been verified and used.' },
+        { status: 400 }
+      );
+    }
+
+    // Check for existing listing
+    const { data: existingListing } = await db
+      .from('listings')
+      .select('id, total_bid')
       .ilike('url', url)
       .maybeSingle();
 
-    let listingId = existing?.id;
-
-    if (!listingId) {
-      const { data: created } = await db
-        .from('listings')
-        .insert({
-          url,
-          display_name: displayName || url,
-          category: category || 'other',
-          total_bid: 0, // stays 0 until you manually confirm the bid below
-          payment_method: 'crypto',
-        })
-        .select('id')
-        .single();
-      listingId = created.id;
+    const walletAddress = process.env.NEXT_PUBLIC_USDT_TRC20_ADDRESS;
+    if (!walletAddress) {
+      console.error('NEXT_PUBLIC_USDT_TRC20_ADDRESS environment variable is not defined.');
     }
 
-    await db.from('bids').insert({
-      listing_id: listingId,
-      amount: amountUSD,
-      currency: 'USDT',
-      payment_method: 'crypto',
-      payment_reference: txHash,
-      status: 'pending',
-    });
+    // Verify the USDT transfer on-chain
+    let verification = { verified: false, reason: 'wallet_not_configured' };
+    if (walletAddress) {
+      verification = await verifyUsdtTransfer(txHash, walletAddress, Number(amountUSD));
+    }
 
-    return NextResponse.json({
-      received: true,
-      message: "Submitted. Your rank updates once we've verified the transaction (usually within a few hours).",
-    });
+    let listingId = existingListing?.id;
+
+    if (verification.verified) {
+      // 1. Update or create listing with the bid amount included
+      if (listingId) {
+        await db
+          .from('listings')
+          .update({
+            total_bid: Number(existingListing.total_bid) + Number(amountUSD),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', listingId);
+      } else {
+        const { data: created } = await db
+          .from('listings')
+          .insert({
+            url,
+            display_name: displayName || url,
+            category: category || 'other',
+            total_bid: Number(amountUSD),
+            payment_method: 'crypto',
+          })
+          .select('id')
+          .single();
+        listingId = created.id;
+      }
+
+      // 2. Insert confirmed bid
+      await db.from('bids').insert({
+        listing_id: listingId,
+        amount: Number(amountUSD),
+        currency: 'USDT',
+        payment_method: 'crypto',
+        payment_reference: txHash,
+        status: 'confirmed',
+      });
+
+      return NextResponse.json({
+        received: true,
+        confirmed: true,
+      });
+    } else {
+      // Verification failed or pending
+      console.log(`Crypto payment verification pending or failed: ${verification.reason || 'unknown'}`);
+
+      // 1. Ensure the listing exists (with total_bid starting at 0 if new)
+      if (!listingId) {
+        const { data: created } = await db
+          .from('listings')
+          .insert({
+            url,
+            display_name: displayName || url,
+            category: category || 'other',
+            total_bid: 0,
+            payment_method: 'crypto',
+          })
+          .select('id')
+          .single();
+        listingId = created.id;
+      }
+
+      // 2. Insert pending bid
+      await db.from('bids').insert({
+        listing_id: listingId,
+        amount: Number(amountUSD),
+        currency: 'USDT',
+        payment_method: 'crypto',
+        payment_reference: txHash,
+        status: 'pending',
+      });
+
+      return NextResponse.json({
+        received: true,
+        confirmed: false,
+        message: 'Your transaction is pending on-chain verification. It will auto-confirm shortly.',
+      });
+    }
   } catch (err) {
     console.error('crypto-submit error', err);
     return NextResponse.json({ error: 'Could not submit the bid.' }, { status: 500 });
