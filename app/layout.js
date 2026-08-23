@@ -1,6 +1,22 @@
+const title = 'PayRank — the price to be seen';
+const description = 'Pay to rank. Outbid whoever is above you. Every dollar is public.';
+
 export const metadata = {
-  title: 'PayRank — the price to be seen',
-  description: 'Pay to rank. Outbid whoever is above you. Every dollar is public.',
+  title,
+  description,
+  openGraph: {
+    title,
+    description,
+    url: 'https://payrank.lol',
+    siteName: 'PayRank',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    site: '@payranklol',
+    title,
+    description,
+  },
 };
 
 export default function RootLayout({ children }) {

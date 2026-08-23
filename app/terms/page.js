@@ -66,7 +66,7 @@ export default function TermsPage() {
       </p>
 
       <h2>9. Contact</h2>
-      <p>Questions about these terms can be sent to the contact listed on the homepage.</p>
+      <p>Questions about these terms can be sent to <a href="mailto:payrank.info@gmail.com">payrank.info@gmail.com</a>.</p>
     </main>
   );
 }

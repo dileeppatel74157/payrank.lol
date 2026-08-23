@@ -55,8 +55,8 @@ export default function PrivacyPage() {
 
       <h2>7. Contact</h2>
       <p>
-        For questions about this policy or to request removal of a listing, use the contact
-        listed on the homepage.
+        For questions about this policy or to request removal of a listing, email us at{' '}
+        <a href="mailto:payrank.info@gmail.com">payrank.info@gmail.com</a>.
       </p>
     </main>
   );

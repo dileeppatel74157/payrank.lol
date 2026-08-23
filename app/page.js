@@ -175,6 +175,9 @@ export default function Page() {
         <p className="footLinks">
           <a href="/rules">Rules</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>
         </p>
+        <p className="footLinks">
+          <a href="https://x.com/payranklol" target="_blank" rel="noopener noreferrer">X</a> · <a href="https://www.instagram.com/payrank.lol" target="_blank" rel="noopener noreferrer">Instagram</a> · <a href="mailto:payrank.info@gmail.com">Email</a>
+        </p>
       </footer>
 
       {modalOpen && (

@@ -46,7 +46,8 @@ export default function RulesPage() {
       <h2>6. Removal</h2>
       <p>
         We can remove a listing that breaks these rules at any time, without a refund. If your
-        listing is removed and you believe it was a mistake, contact us and we'll take a look.
+        listing is removed and you believe it was a mistake, contact us at{' '}
+        <a href="mailto:payrank.info@gmail.com">payrank.info@gmail.com</a> and we'll take a look.
       </p>
 
       <h2>7. No guarantee of results</h2>
