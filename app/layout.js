@@ -12,18 +12,32 @@ export const metadata = {
     index: true,
     follow: true,
   },
+  icons: {
+    icon: '/logo/payrank-icon.png',
+    shortcut: '/logo/payrank-icon.png',
+    apple: '/logo/payrank-icon.png',
+  },
   openGraph: {
     title,
     description,
     url: 'https://www.payrank.lol/',
     siteName: 'PayRank',
     type: 'website',
+    images: [
+      {
+        url: '/logo/payrank-horizontal.png',
+        width: 800,
+        height: 400,
+        alt: 'PayRank.LOL Logo',
+      },
+    ],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     site: '@payranklol',
     title,
     description,
+    images: ['/logo/payrank-horizontal.png'],
   },
 };
 

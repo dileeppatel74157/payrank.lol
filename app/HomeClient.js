@@ -167,7 +167,14 @@ export default function HomeClient({ initialListings = [], initialRecentBidsCoun
     <main className="wrap">
       <header className="hero">
         <p className="eyebrow">NO ALGORITHM · NO VOTES · JUST THE PRICE</p>
-        <h1>PayRank</h1>
+        <div className="logoContainer">
+          <a href="/" className="logoLink" aria-label="PayRank.LOL Home">
+            <picture>
+              <source media="(max-width: 480px)" srcSet="/logo/payrank-icon.png" />
+              <img src="/logo/payrank-horizontal.png" alt="PayRank.LOL" className="logoImg" />
+            </picture>
+          </a>
+        </div>
         <p className="sub">
           Every rank on this board was bought. Pay more than #1 and the top spot is yours —
           nothing is ever refunded, and no one is ever pushed off for free.
@@ -464,12 +471,35 @@ export default function HomeClient({ initialListings = [], initialRecentBidsCoun
           color: #d7cfa8;
           margin: 0 0 12px;
         }
-        h1 {
-          font-family: 'Fraunces', serif;
-          font-weight: 600;
-          font-size: 64px;
-          color: #f7f5ef;
-          margin: 0 0 16px;
+        .logoContainer {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-bottom: 24px;
+        }
+        .logoLink {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          outline: none;
+          text-decoration: none;
+        }
+        .logoLink:focus-visible {
+          outline: 2px solid #d7cfa8;
+          outline-offset: 4px;
+          border-radius: 4px;
+        }
+        .logoImg {
+          height: 44px;
+          width: auto;
+          display: block;
+          object-fit: contain;
+          transition: height 0.2s ease;
+        }
+        @media (max-width: 480px) {
+          .logoImg {
+            height: 40px;
+          }
         }
         .sub {
           font-size: 16px;
