@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/verify-pending",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
