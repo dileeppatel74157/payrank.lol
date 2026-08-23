@@ -166,7 +166,6 @@ export default function HomeClient({ initialListings = [], initialRecentBidsCoun
   return (
     <main className="wrap">
       <header className="hero">
-        <p className="eyebrow">NO ALGORITHM · NO VOTES · JUST THE PRICE</p>
         <div className="logoContainer">
           <a href="/" className="logoLink" aria-label="PayRank.LOL Home">
             <picture>
@@ -175,6 +174,7 @@ export default function HomeClient({ initialListings = [], initialRecentBidsCoun
             </picture>
           </a>
         </div>
+        <p className="eyebrow">NO ALGORITHM · NO VOTES · JUST THE PRICE</p>
         <p className="sub">
           Every rank on this board was bought. Pay more than #1 and the top spot is yours —
           nothing is ever refunded, and no one is ever pushed off for free.
@@ -469,13 +469,13 @@ export default function HomeClient({ initialListings = [], initialRecentBidsCoun
           font-size: 12px;
           letter-spacing: 0.14em;
           color: #d7cfa8;
-          margin: 0 0 12px;
+          margin: 0 0 28px;
         }
         .logoContainer {
           display: flex;
           justify-content: center;
           align-items: center;
-          margin-bottom: 24px;
+          margin-bottom: 22px;
         }
         .logoLink {
           display: inline-flex;
@@ -490,15 +490,17 @@ export default function HomeClient({ initialListings = [], initialRecentBidsCoun
           border-radius: 4px;
         }
         .logoImg {
-          height: 44px;
-          width: auto;
+          max-width: 260px;
+          width: min(260px, 70vw);
+          height: auto;
           display: block;
-          object-fit: contain;
-          transition: height 0.2s ease;
+          transition: all 0.2s ease;
         }
         @media (max-width: 480px) {
           .logoImg {
-            height: 40px;
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
           }
         }
         .sub {
