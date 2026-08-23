@@ -14,22 +14,53 @@ export default function Page() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [txHash, setTxHash] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [recentBidsCount, setRecentBidsCount] = useState(0);
 
-  async function loadListings() {
-    const { data } = await supabasePublic
+  async function loadListings(cat = activeCategory) {
+    let query = supabasePublic
       .from('listings')
       .select('id, url, display_name, category, total_bid, clicks, created_at')
       .order('total_bid', { ascending: false })
       .limit(50);
+
+    if (cat !== 'all') {
+      query = query.eq('category', cat.toLowerCase());
+    }
+
+    const { data } = await query;
     setListings(data || []);
     setLoading(false);
   }
 
+  async function loadRecentActivity() {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    try {
+      const { count, error } = await supabasePublic
+        .from('bids')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'confirmed')
+        .gte('created_at', yesterday);
+
+      if (!error && count !== null) {
+        setRecentBidsCount(count);
+      } else {
+        setRecentBidsCount(0);
+      }
+    } catch (e) {
+      setRecentBidsCount(0);
+    }
+  }
+
   useEffect(() => {
-    loadListings();
-    const interval = setInterval(loadListings, 15000);
+    loadListings(activeCategory);
+    loadRecentActivity();
+    const interval = setInterval(() => {
+      loadListings(activeCategory);
+      loadRecentActivity();
+    }, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [activeCategory]);
 
   const topBid = listings[0]?.total_bid || 0;
   const priceToBeatNumber1 = Math.floor(topBid) + 1;
@@ -144,6 +175,42 @@ export default function Page() {
         </div>
       </header>
 
+      <section className="howItWorks">
+        <div className="step">
+          <span className="stepNum">01</span>
+          <h3>Submit your link</h3>
+          <p>Any website, product, or social handle.</p>
+        </div>
+        <div className="step">
+          <span className="stepNum">02</span>
+          <h3>Name your price</h3>
+          <p>Pay by card, UPI, or USDT.</p>
+        </div>
+        <div className="step">
+          <span className="stepNum">03</span>
+          <h3>Outbid to stay on top</h3>
+          <p>Rank is just the highest lifetime bid, nothing else.</p>
+        </div>
+      </section>
+
+      <div className="tabs">
+        {['All', 'Tools', 'AI', 'Crypto', 'Apps', 'Other'].map((cat) => (
+          <button
+            key={cat}
+            className={`tab ${activeCategory === cat.toLowerCase() ? 'active' : ''}`}
+            onClick={() => setActiveCategory(cat.toLowerCase())}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {recentBidsCount > 0 && (
+        <div className="activityTicker">
+          <span>🔥 {recentBidsCount} new {recentBidsCount === 1 ? 'bid' : 'bids'} in the last 24 hours</span>
+        </div>
+      )}
+
       <section className="ledger">
         <div className="ledgerHead">
           <span>Rank</span>
@@ -154,7 +221,11 @@ export default function Page() {
 
         {loading && <p className="empty">Loading the board…</p>}
         {!loading && listings.length === 0 && (
-          <p className="empty">No bids yet. Be lot #1.</p>
+          <p className="empty">
+            {activeCategory === 'all'
+              ? 'No bids yet. Be lot #1.'
+              : `No listings in category "${activeCategory}" yet. Be the first!`}
+          </p>
         )}
 
         {listings.map((item, i) => (
@@ -200,6 +271,17 @@ export default function Page() {
                   onChange={(e) => setForm({ ...form, displayName: e.target.value })}
                   placeholder="What should the board call you?"
                 />
+                <label>Category</label>
+                <select
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                >
+                  <option value="tools">Tools</option>
+                  <option value="ai">AI</option>
+                  <option value="crypto">Crypto</option>
+                  <option value="apps">Apps</option>
+                  <option value="other">Other</option>
+                </select>
                 <label>Bid amount (USD)</label>
                 <input
                   type="number"
@@ -408,6 +490,94 @@ export default function Page() {
           text-decoration: underline;
         }
 
+        .howItWorks {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+          margin: 32px 0 40px;
+          text-align: left;
+        }
+        .step {
+          background: #1a2c4c;
+          border: 1px solid #2d3f61;
+          border-radius: 6px;
+          padding: 20px;
+          position: relative;
+        }
+        .stepNum {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 11px;
+          color: #b08d3e;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          display: block;
+          margin-bottom: 8px;
+        }
+        .step h3 {
+          font-family: 'Fraunces', serif;
+          font-size: 18px;
+          color: #f7f5ef;
+          margin: 0 0 8px;
+          font-weight: 600;
+        }
+        .step p {
+          font-size: 13.5px;
+          line-height: 1.5;
+          color: #b9c2d6;
+          margin: 0;
+        }
+        @media (max-width: 600px) {
+          .howItWorks {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+        }
+
+        .tabs {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 16px;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+        .tab {
+          background: transparent;
+          border: 1px solid #3a4356;
+          color: #b9c2d6;
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-size: 13px;
+          font-family: 'IBM Plex Mono', monospace;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .tab:hover {
+          color: #f7f5ef;
+          border-color: #d7cfa8;
+        }
+        .tab.active {
+          background: #d7cfa8;
+          color: #12213a;
+          border-color: #d7cfa8;
+          font-weight: 600;
+        }
+
+        .activityTicker {
+          background: #1a2c4c;
+          border: 1px solid #2d3f61;
+          border-radius: 4px;
+          padding: 10px 16px;
+          margin-bottom: 16px;
+          text-align: center;
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 13px;
+          color: #d7cfa8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        }
+
         .overlay {
           position: fixed;
           inset: 0;
@@ -448,7 +618,7 @@ export default function Page() {
           margin: 14px 0 6px;
           color: #12213a;
         }
-        input {
+        input, select {
           width: 100%;
           padding: 12px;
           border: 1px solid #d8d3c2;
@@ -456,8 +626,9 @@ export default function Page() {
           font-size: 14px;
           font-family: 'Inter', sans-serif;
           background: #fff;
+          color: #12213a;
         }
-        input:focus {
+        input:focus, select:focus {
           outline: 2px solid #a23b2e;
           outline-offset: 1px;
         }
