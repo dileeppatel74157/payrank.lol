@@ -10,7 +10,7 @@ const razorpay = new Razorpay({
 // The actual listing/bid row is only written once the webhook confirms payment — never trust the client.
 export async function POST(req) {
   try {
-    const { amountUSD, url, displayName, category } = await req.json();
+    const { amountUSD, url, displayName, category, referralCode, trackingId } = await req.json();
 
     if (!amountUSD || amountUSD < 1 || !url) {
       return NextResponse.json({ error: 'A valid amount and URL are required.' }, { status: 400 });
@@ -23,6 +23,8 @@ export async function POST(req) {
         url,
         display_name: displayName || url,
         category: category || 'other',
+        referral_code: referralCode || '',
+        tracking_id: trackingId || '',
       },
     });
 

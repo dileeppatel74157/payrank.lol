@@ -3,6 +3,14 @@
 import { useEffect, useState } from 'react';
 import { supabasePublic } from '@/lib/supabase';
 
+function getCookie(name) {
+  if (typeof document === 'undefined') return '';
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return '';
+}
+
 const USDT_ADDRESS = process.env.NEXT_PUBLIC_USDT_TRC20_ADDRESS || 'ADD_YOUR_TRC20_ADDRESS';
 
 export default function HomeClient({ initialListings = [], initialRecentBidsCount = 0 }) {
@@ -93,6 +101,8 @@ export default function HomeClient({ initialListings = [], initialRecentBidsCoun
           url: form.url,
           displayName: form.displayName,
           category: form.category,
+          referralCode: getCookie('_fprom_ref') || '',
+          trackingId: getCookie('_fprom_tid') || '',
         }),
       });
       const order = await res.json();
@@ -149,6 +159,8 @@ export default function HomeClient({ initialListings = [], initialRecentBidsCoun
           displayName: form.displayName,
           category: form.category,
           txHash,
+          referralCode: getCookie('_fprom_ref') || '',
+          trackingId: getCookie('_fprom_tid') || '',
         }),
       });
       const data = await res.json();

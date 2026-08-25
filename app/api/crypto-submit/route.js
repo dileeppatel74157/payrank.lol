@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { verifyUsdtTransfer } from '@/lib/tron';
+import { calculateCreatorCommission, trackFirstPromoterConversion } from '@/lib/firstpromoter';
 
 export async function POST(req) {
   try {
-    const { amountUSD, url, displayName, category, txHash } = await req.json();
+    const { amountUSD, url, displayName, category, txHash, referralCode, trackingId } = await req.json();
 
     if (!amountUSD || amountUSD < 1 || !url || !txHash) {
       return NextResponse.json(
@@ -76,15 +77,48 @@ export async function POST(req) {
         listingId = created.id;
       }
 
+      // Calculate Net Revenue and Commission
+      const calc = calculateCreatorCommission(Number(amountUSD), 'crypto');
+
       // 2. Insert confirmed bid
-      await db.from('bids').insert({
-        listing_id: listingId,
-        amount: Number(amountUSD),
-        currency: 'USDT',
-        payment_method: 'crypto',
-        payment_reference: txHash,
-        status: 'confirmed',
-      });
+      const { data: createdBid } = await db
+        .from('bids')
+        .insert({
+          listing_id: listingId,
+          amount: Number(amountUSD),
+          currency: 'USDT',
+          payment_method: 'crypto',
+          payment_reference: txHash,
+          status: 'confirmed',
+          referral_code: referralCode || null,
+          tracking_id: trackingId || null,
+          net_revenue: calc.netRevenue,
+          gst_amount: calc.gstAmount,
+          gateway_fee: calc.gatewayFee,
+          commission_percentage: calc.commissionPercentage,
+          commission_amount: calc.commissionAmount,
+        })
+        .select('id')
+        .single();
+
+      // Trigger FirstPromoter sale tracking server-side
+      if (referralCode || trackingId) {
+        const trackingResult = await trackFirstPromoterConversion({
+          amountUSD: Number(amountUSD),
+          paymentMethod: 'crypto',
+          paymentReference: txHash,
+          referralCode,
+          trackingId,
+          bidId: createdBid.id,
+        });
+
+        if (trackingResult.tracked) {
+          await db
+            .from('bids')
+            .update({ firstpromoter_sale_tracked: true })
+            .eq('id', createdBid.id);
+        }
+      }
 
       return NextResponse.json({
         received: true,
@@ -110,6 +144,9 @@ export async function POST(req) {
         listingId = created.id;
       }
 
+      // Calculate Net Revenue and Commission
+      const calc = calculateCreatorCommission(Number(amountUSD), 'crypto');
+
       // 2. Insert pending bid
       await db.from('bids').insert({
         listing_id: listingId,
@@ -118,6 +155,13 @@ export async function POST(req) {
         payment_method: 'crypto',
         payment_reference: txHash,
         status: 'pending',
+        referral_code: referralCode || null,
+        tracking_id: trackingId || null,
+        net_revenue: calc.netRevenue,
+        gst_amount: calc.gstAmount,
+        gateway_fee: calc.gatewayFee,
+        commission_percentage: calc.commissionPercentage,
+        commission_amount: calc.commissionAmount,
       });
 
       return NextResponse.json({

@@ -30,6 +30,9 @@ export async function GET(req) {
         amount,
         payment_reference,
         listing_id,
+        referral_code,
+        tracking_id,
+        firstpromoter_sale_tracked,
         listings (
           id,
           total_bid
@@ -99,6 +102,26 @@ export async function GET(req) {
               updated_at: new Date().toISOString(),
             })
             .eq('id', bid.listing_id);
+
+          // Trigger FirstPromoter sale tracking server-side
+          if ((bid.referral_code || bid.tracking_id) && !bid.firstpromoter_sale_tracked) {
+            const { trackFirstPromoterConversion } = await import('@/lib/firstpromoter');
+            const trackingResult = await trackFirstPromoterConversion({
+              amountUSD: Number(bid.amount),
+              paymentMethod: 'crypto',
+              paymentReference: bid.payment_reference,
+              referralCode: bid.referral_code,
+              trackingId: bid.tracking_id,
+              bidId: bid.id,
+            });
+
+            if (trackingResult.tracked) {
+              await db
+                .from('bids')
+                .update({ firstpromoter_sale_tracked: true })
+                .eq('id', bid.id);
+            }
+          }
 
           confirmedCount++;
           console.log(`Successfully verified and confirmed bid ${bid.id} for listing ${bid.listing_id}`);

@@ -1,3 +1,5 @@
+import Script from 'next/script';
+
 const title = 'PayRank — Buy Your Way to #1';
 const description = 'PayRank is a public leaderboard where websites, products and creators compete for attention. Bid higher to claim a higher rank.';
 
@@ -42,6 +44,8 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  const fpCid = process.env.NEXT_PUBLIC_FIRSTPROMOTER_CID || '';
+
   return (
     <html lang="en">
       <head>
@@ -51,7 +55,25 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body style={{ margin: 0 }}>{children}</body>
+      <body style={{ margin: 0 }}>
+        {children}
+        {fpCid && (
+          <>
+            <Script id="firstpromoter-init" strategy="afterInteractive">
+              {`
+                (function(w){w.fpr=w.fpr||function(){w.fpr.q=w.fpr.q||[];w.fpr.q[arguments[0]=='set'?'unshift':'push'](arguments);};})(window);
+                fpr("init", { cid: "${fpCid}" });
+                fpr("click");
+              `}
+            </Script>
+            <Script
+              src="https://cdn.firstpromoter.com/fpr.js"
+              strategy="afterInteractive"
+            />
+          </>
+        )}
+      </body>
     </html>
   );
 }
+
